@@ -22,6 +22,14 @@ Perubahan Rancangan:
 (Tulis struct dan slice/map apa yang kamu simpan, dan kenapa dipilih begitu. Rancang ini sebelum menulis kode, lalu catat kalau berubah di tengah jalan.)
 
 ## 3. Satu keputusan desain
+Keputusan: validasi peminjaman saya bagi menjadi dua tahap. Tahap pertama (`validasiPeminjaman`) memeriksa isi body saja, seperti field wajib, peminjam, tanggal, slot, dan jumlah minimal, dan dijalankan sebelum mutex dikunci. Tahap kedua (`cekSumberDayaDanJumlah`) memeriksa hal yang butuh data tersimpan, yaitu sumber daya ada dan jumlah tidak melebihi stok, dan dijalankan setelah mutex dikunci.
+
+Pilihan lain yang saya pertimbangkan:
+- Semua validasi di luar lock. Ini berbahaya karena antara "cek" dan "simpan" ada jeda, dan request lain bisa mengubah data di jeda itu.
+- Semua validasi di dalam lock. Ini aman, tapi request lain harus ikut menunggu walaupun yang diperiksa hanya isi body yang tidak menyentuh data bersama.
+
+Alasan memilih dua tahap: pemeriksaan yang tidak menyentuh data bersama tidak perlu membuat request lain menunggu, sedangkan pemeriksaan yang membaca data bersama harus berada dalam kunci yang sama dengan penyimpanan supaya tidak disela request lain. Pola ini juga akan dipakai untuk cek bentrok di B5 dan keamanan request bersamaan di B7.
+
 (Satu keputusan yang kamu ambil, pilihan lain yang kamu pertimbangkan, dan alasanmu memilih yang ini. Contoh: kenapa cek bentrok per slot, bukan per rentang.)
 
 ## 4. Bug atau kendala (minimal dua)
